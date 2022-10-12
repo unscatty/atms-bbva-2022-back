@@ -1,14 +1,14 @@
-import { plainToClass } from 'class-transformer';
+import { HttpException } from '@exceptions/HttpException';
+import { plainToInstance } from 'class-transformer';
 import { validate, ValidationError } from 'class-validator';
 import { RequestHandler } from 'express';
-import { HttpException } from '@exceptions/HttpException';
 
 const getAllNestedErrors = (error: ValidationError) => {
-  if(error.constraints){
-    return Object.values(error.constraints)
+  if (error.constraints) {
+    return Object.values(error.constraints);
   }
-  return error.children.map(getAllNestedErrors).join(',')
-}
+  return error.children.map(getAllNestedErrors).join(',');
+};
 
 export const validationMiddleware = (
   type: any,
@@ -18,7 +18,7 @@ export const validationMiddleware = (
   forbidNonWhitelisted = true,
 ): RequestHandler => {
   return (req, res, next) => {
-    const obj = plainToClass(type, req[value]);
+    const obj = plainToInstance(type, req[value]);
     validate(obj, { skipMissingProperties, whitelist, forbidNonWhitelisted }).then((errors: ValidationError[]) => {
       if (errors.length > 0) {
         const message = errors.map(getAllNestedErrors).join(', ');
