@@ -5,6 +5,8 @@ const validateEnv = () => {
     NODE_ENV: str(),
     PORT: port(),
 
+    SOCKETS_PORT: num(),
+
     DIALOGFLOWCX_AUDIO_ENCODING: str(),
     DIALOGFLOWCX_AUDIO_SAMPLE_RATE: num(),
     DIALOGFLOWCX_LANGUAGE_CODE: str({
