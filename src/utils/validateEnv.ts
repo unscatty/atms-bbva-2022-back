@@ -15,6 +15,8 @@ const validateEnv = () => {
     DIALOGFLOWCX_PROJECT_ID: str(),
     DIALOGFLOWCX_AGENT_ID: str(),
     DIALOGFLOWCX_REGION_ID: str(),
+
+    DIALOGFLOWCX_API_ENDPOINT: str(),
   });
 };
 

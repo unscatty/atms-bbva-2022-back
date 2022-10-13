@@ -7,18 +7,11 @@ export class DialogFlowWebhookController {
     const { tag } = data.fulfillmentInfo;
     const { text, transcript } = data;
 
-    // const datos: DialogFlowCX;
     let newText = 'No entendi';
 
     if (tag === 'test') {
       newText = `Hola, dijiste: ${text || transcript}`;
     }
-
-    // const req: DialogFlowCX.IWebhookRequest = {
-    //   messages: [
-    //     { payload}
-    //   ]
-    // }
 
     return {
       fulfillmentResponse: {

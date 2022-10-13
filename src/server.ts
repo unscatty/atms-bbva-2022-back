@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import App from '@/app';
 import { DialogFlowWebhookController } from '@/controllers/dialog-flow-webhook.controller';
 import { SOCKETS_PORT } from '@config';
@@ -8,8 +9,13 @@ import validateEnv from '@utils/validateEnv';
 import { useSocketServer } from 'socket-controllers';
 import { Server } from 'socket.io';
 import DialogFlowCXSocketController from './controllers/dialog-flow.socket.controller';
+import Container from 'typedi';
+import { useContainer as useSocketContainer } from 'socket-controllers';
 
+// try {
 validateEnv();
+
+useSocketContainer(Container);
 
 const app = new App([IndexController, DialogFlowWebhookController]);
 app.listen();
