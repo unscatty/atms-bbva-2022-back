@@ -29,6 +29,12 @@ export const defaultDialogFlowCXSessionPathOptions: DialogFlowCXSessionPathOptio
 
 export const DEFAULT_DIALOG_FLOW_CX_API_ENDPOINT = new Token<string>('DEFAULT_DIALOG_FLOW_CX_API_ENDPOINT');
 
+export const defaultSynthesizeSpeechConfig: DialogFlowCX.ISynthesizeSpeechConfig = {
+  speakingRate: 1.15,
+  pitch: 10.0,
+  volumeGainDb: 0.5,
+};
+
 // Add dependencies to IoC container
 Container.set(DEFAULT_DIALOG_FLOW_CX_SESSION_PATH_OPTIONS, defaultDialogFlowCXSessionPathOptions);
 Container.set(DEFAULT_DIALOG_FLOW_CX_API_ENDPOINT, DIALOGFLOWCX_API_ENDPOINT);
@@ -83,6 +89,37 @@ export default class DialogFlowCXService {
       };
 
       const [response] = await this.sessionClient.detectIntent(request);
+      // return this.sessionClient.detectIntent(request);
+
+      return response;
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  async detectIntentAudioSynthesize(recordedAudio: Buffer) {
+    try {
+      const request: DialogFlowCX.IDetectIntentRequest = {
+        session: this.sessionPath,
+        queryInput: {
+          // TODO: set this as a separate config object
+          audio: {
+            config: {
+              audioEncoding: 'AUDIO_ENCODING_LINEAR_16',
+              sampleRateHertz: parseInt(DIALOGFLOWCX_AUDIO_SAMPLE_RATE),
+            },
+            audio: recordedAudio,
+          },
+          languageCode: DIALOGFLOWCX_LANGUAGE_CODE,
+        },
+        outputAudioConfig: {
+          audioEncoding: 'OUTPUT_AUDIO_ENCODING_LINEAR_16',
+          synthesizeSpeechConfig: defaultSynthesizeSpeechConfig,
+        },
+      };
+
+      const [response] = await this.sessionClient.detectIntent(request);
+      // return this.sessionClient.detectIntent(request);
 
       return response;
     } catch (error) {

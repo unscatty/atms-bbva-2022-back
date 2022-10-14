@@ -7,10 +7,10 @@ export class DialogFlowWebhookController {
     const { tag } = data.fulfillmentInfo;
     const { text, transcript } = data;
 
-    let newText = 'No entendi';
+    let newText = '';
 
     if (tag === 'test') {
-      newText = `Hola, dijiste: ${text || transcript}`;
+      newText = `Hey! you said ${text || transcript}`;
     }
 
     return {
