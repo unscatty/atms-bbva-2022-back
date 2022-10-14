@@ -12,6 +12,12 @@ import {
   DIALOGFLOWCX_REGION_ID,
   DIALOGFLOWCX_API_ENDPOINT,
 } from '@config';
+import { ReadStream } from 'fs';
+import { promisify } from 'util';
+import { Transform, pipeline } from 'stream';
+import type * as gax from 'google-gax';
+
+const pump = promisify(pipeline);
 
 export type DialogFlowCXSessionPathOptions = {
   project: string;
@@ -95,6 +101,62 @@ export default class DialogFlowCXService {
     } catch (error) {
       console.error(error);
     }
+  }
+
+  async detectIntentAudioStream(stream: ReadStream): Promise<gax.CancellableStream> {
+    const detectStream = this.sessionClient
+      .streamingDetectIntent()
+      .on('error', console.error)
+      .on('data', (data: DialogFlowCX.IStreamingDetectIntentResponse) => {
+        if (data.recognitionResult) {
+          console.log(`Intermediate Transcript: ${data.recognitionResult.transcript}`);
+        } else {
+          console.log('Detected Intent:');
+          const result = data.detectIntentResponse.queryResult;
+
+          console.log(`User Query: ${result.transcript}`);
+          for (const message of result.responseMessages) {
+            if (message.text) {
+              console.log(`Agent Response: ${message.text.text}`);
+            }
+          }
+          if (result.match.intent) {
+            console.log(`Matched Intent: ${result.match.intent.displayName}`);
+          }
+          console.log(`Current Page: ${result.currentPage.displayName}`);
+        }
+      });
+
+    const initialStreamRequest: DialogFlowCX.IDetectIntentRequest = {
+      session: this.sessionPath,
+      queryInput: {
+        audio: {
+          config: {
+            audioEncoding: 'AUDIO_ENCODING_LINEAR_16',
+            sampleRateHertz: parseInt(DIALOGFLOWCX_AUDIO_SAMPLE_RATE),
+            singleUtterance: true,
+          },
+        },
+        languageCode: DIALOGFLOWCX_LANGUAGE_CODE,
+      },
+    };
+
+    detectStream.write(initialStreamRequest);
+
+    // Stream the audio to Dialogflow.
+    await pump(
+      stream,
+      // Format the audio stream into the request format.
+      new Transform({
+        objectMode: true,
+        transform: (obj, _, next) => {
+          next(null, { queryInput: { audio: { audio: obj } } });
+        },
+      }),
+      detectStream
+    );
+
+    return detectStream;
   }
 
   async detectIntentAudioSynthesize(recordedAudio: Buffer) {
