@@ -12,12 +12,13 @@ import {
   DIALOGFLOWCX_REGION_ID,
   DIALOGFLOWCX_API_ENDPOINT,
 } from '@config';
-import { ReadStream } from 'fs';
+import { ReadStream, WriteStream } from 'fs';
 import { promisify } from 'util';
 import { Transform, pipeline } from 'stream';
 import type * as gax from 'google-gax';
+import Pumpify from 'pumpify';
 
-const pump = promisify(pipeline);
+// const pump = promisify(pipeline);
 
 export type DialogFlowCXSessionPathOptions = {
   project: string;
@@ -103,7 +104,7 @@ export default class DialogFlowCXService {
     }
   }
 
-  async detectIntentAudioStream(stream: ReadStream): Promise<gax.CancellableStream> {
+  detectIntentAudioStream(stream: ReadStream): Pumpify {
     const detectStream = this.sessionClient
       .streamingDetectIntent()
       .on('error', console.error)
@@ -124,17 +125,23 @@ export default class DialogFlowCXService {
             console.log(`Matched Intent: ${result.match.intent.displayName}`);
           }
           console.log(`Current Page: ${result.currentPage.displayName}`);
+
+          if (data.recognitionResult.isFinal) {
+            console.log('final stream');
+
+            return this.detectIntentAudioStream(stream);
+          }
         }
       });
 
-    const initialStreamRequest: DialogFlowCX.IDetectIntentRequest = {
+    const initialStreamRequest: DialogFlowCX.IStreamingDetectIntentRequest = {
       session: this.sessionPath,
       queryInput: {
         audio: {
           config: {
             audioEncoding: 'AUDIO_ENCODING_LINEAR_16',
             sampleRateHertz: parseInt(DIALOGFLOWCX_AUDIO_SAMPLE_RATE),
-            singleUtterance: true,
+            singleUtterance: false,
           },
         },
         languageCode: DIALOGFLOWCX_LANGUAGE_CODE,
@@ -144,7 +151,19 @@ export default class DialogFlowCXService {
     detectStream.write(initialStreamRequest);
 
     // Stream the audio to Dialogflow.
-    await pump(
+    // await pump(
+    //   stream,
+    //   // Format the audio stream into the request format.
+    //   new Transform({
+    //     objectMode: true,
+    //     transform: (obj, _, next) => {
+    //       next(null, { queryInput: { audio: { audio: obj } } });
+    //     },
+    //   }),
+    //   detectStream
+    // );
+
+    return new Pumpify(
       stream,
       // Format the audio stream into the request format.
       new Transform({
@@ -156,7 +175,7 @@ export default class DialogFlowCXService {
       detectStream
     );
 
-    return detectStream;
+    // return detectStream;
   }
 
   async detectIntentAudioSynthesize(recordedAudio: Buffer) {
