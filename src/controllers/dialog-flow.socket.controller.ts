@@ -25,23 +25,29 @@ export default class DialogFlowCXSocketController {
     socket.on('detect-intent-audio-synth', this.wrap(this.onDetectIntentAudioSynthesize).bind(this));
     socket.on('detect-intent-audio-echo', this.wrap(this.echoAudio).bind(this));
 
-    socket.on('start-streaming-audio', data => {
+    socket.on('start-streaming-audio', () => {
       try {
         // this.dfcxService.detectIntentAudioStream(data).then(stream => {
         // recognizeStream = stream;
-        recognizeStream = this.dfcxService.detectIntentAudioStream(data);
+        recognizeStream = this.dfcxService.improvedDetectAudioStream(data => {
+          socket.emit('intent-matched', data);
+        });
         console.log('on-start');
 
         // recognizeStream = createWriteStream('audio.wav')
       } catch (error) {
-        console.error(error)
+        console.error(error);
       }
     });
 
     socket.on('on-stream-data', (data: Buffer) => {
       try {
-        console.log('on-data')
-        recognizeStream?.write(data);
+        // console.log('on-data');
+        if (data.length > 0) {
+          // console.log(data);
+          // console.log('writing to stream');
+          recognizeStream?.write(data);
+        }
       } catch (error) {}
     });
 

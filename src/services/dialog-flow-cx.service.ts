@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { SessionsClient } from '@google-cloud/dialogflow-cx';
+import { ImprovedSessionsClient, SessionsClient } from '../helpers/improved-sessions-client';
 import { Service } from 'typedi';
 import { v4 } from 'uuid';
 import { Container, Token, Inject } from 'typedi';
@@ -17,6 +17,7 @@ import { promisify } from 'util';
 import { Transform, pipeline } from 'stream';
 import type * as gax from 'google-gax';
 import Pumpify from 'pumpify';
+import { response } from 'express';
 
 // const pump = promisify(pipeline);
 
@@ -102,6 +103,84 @@ export default class DialogFlowCXService {
     } catch (error) {
       console.error(error);
     }
+  }
+
+  improvedDetectAudioStream(onData: (data: DialogFlowCX.IStreamingDetectIntentResponse) => void): Pumpify {
+    const initialStreamRequest: DialogFlowCX.IStreamingDetectIntentRequest = {
+      session: this.sessionPath,
+      queryInput: {
+        audio: {
+          config: {
+            audioEncoding: 'AUDIO_ENCODING_LINEAR_16',
+            sampleRateHertz: parseInt(DIALOGFLOWCX_AUDIO_SAMPLE_RATE),
+            singleUtterance: true,
+          },
+        },
+        languageCode: DIALOGFLOWCX_LANGUAGE_CODE,
+      },
+      outputAudioConfig: {
+        audioEncoding: 'OUTPUT_AUDIO_ENCODING_LINEAR_16',
+        synthesizeSpeechConfig: defaultSynthesizeSpeechConfig,
+      },
+    };
+
+    const detectStream = (this.sessionClient as unknown as ImprovedSessionsClient)
+      .streamingIntentDetect(initialStreamRequest)
+      .on('error', console.error)
+      .on('data', onData);
+    // .on('data', (data: DialogFlowCX.IStreamingDetectIntentResponse) => {
+    //   if (data.recognitionResult) {
+    //     console.log(`Intermediate Transcript: ${data.recognitionResult.transcript}`);
+
+    //     console.log(data);
+    //     // const response = data.response;
+    //     // console.log(response);
+
+    //     // console.log('Detected Intent:');
+    //     // const result = data.detectIntentResponse.queryResult;
+
+    //     // console.log(`User Query: ${result.transcript}`);
+    //     // for (const message of result.responseMessages) {
+    //     //   if (message.text) {
+    //     //     console.log(`Agent Response: ${message.text.text}`);
+    //     //   }
+    //     // }
+    //     // if (result.match.intent) {
+    //     //   console.log(`Matched Intent: ${result.match.intent.displayName}`);
+    //     // }
+    //     // console.log(`Current Page: ${result.currentPage.displayName}`);
+
+    //     // if (data.recognitionResult.isFinal) {
+    //     //   console.log('final stream');
+
+    //     //   // return this.detectIntentAudioStream(stream);
+    //     // }
+    //   } else {
+    //     console.log('Detected Intent:');
+    //     const result = data.detectIntentResponse.queryResult;
+
+    //     console.log(`User Query: ${result.transcript}`);
+    //     for (const message of result.responseMessages) {
+    //       if (message.text) {
+    //         console.log(`Agent Response: ${message.text.text}`);
+    //       }
+    //     }
+    //     if (result.match.intent) {
+    //       console.log(`Matched Intent: ${result.match.intent.displayName}`);
+    //     }
+    //     console.log(`Current Page: ${result.currentPage.displayName}`);
+
+    //     console.log(data.detectIntentResponse)
+
+    //     // if (data.detectIntentResponse.queryResult.) {
+    //     //   console.log('final stream');
+
+    //     //   // return this.detectIntentAudioStream(stream);
+    //     // }
+    //   }
+    // });
+
+    return detectStream as Pumpify;
   }
 
   detectIntentAudioStream(stream: ReadStream): Pumpify {

@@ -17,6 +17,7 @@
     "tunnel": "ngrok http 8080"
   },
   "dependencies": {
+    "@google-cloud/common": "^4.0.3",
     "@google-cloud/dialogflow-cx": "^3.1.1",
     "bcrypt": "^5.1.0",
     "class-transformer": "^0.5.1",
@@ -39,6 +40,7 @@
     "routing-controllers-openapi": "^3.1.0",
     "socket-controllers": "^0.0.5",
     "socket.io": "^4.5.2",
+    "stream-events": "^1.0.5",
     "swagger-ui-express": "^4.5.0",
     "typedi": "^0.10.0",
     "uuid": "^9.0.0",
