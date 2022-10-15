@@ -25,20 +25,76 @@ export default class DialogFlowCXSocketController {
     socket.on('detect-intent-audio-synth', this.wrap(this.onDetectIntentAudioSynthesize).bind(this));
     socket.on('detect-intent-audio-echo', this.wrap(this.echoAudio).bind(this));
 
-    socket.on('start-streaming-audio', () => {
+    const listenStream = () => {
+      recognizeStream?.destroy();
+
       try {
         // this.dfcxService.detectIntentAudioStream(data).then(stream => {
-        // recognizeStream = stream;
+        // recognizeStream = stream;t
         recognizeStream = this.dfcxService.improvedDetectAudioStream(data => {
-          socket.emit('intent-matched', data);
+          // socket.emit('intent-matched', data);
+
+          if (data.recognitionResult) {
+            console.log(`Intermediate Transcript: ${data.recognitionResult.transcript}`);
+
+            // console.log(data);
+            // const response = data.response;
+            // console.log(response);
+
+            // console.log('Detected Intent:');
+            // const result = data.detectIntentResponse.queryResult;
+
+            // console.log(`User Query: ${result.transcript}`);
+            // for (const message of result.responseMessages) {
+            //   if (message.text) {
+            //     console.log(`Agent Response: ${message.text.text}`);
+            //   }
+            // }
+            // if (result.match.intent) {
+            //   console.log(`Matched Intent: ${result.match.intent.displayName}`);
+            // }
+            // console.log(`Current Page: ${result.currentPage.displayName}`);
+
+            // if (data.recognitionResult.isFinal) {
+            //   console.log('final stream');
+
+            //   // return this.detectIntentAudioStream(stream);
+            // }
+          } else {
+            socket.emit('intent-matched', data);
+            console.log('Detected Intent:');
+            const result = data.detectIntentResponse.queryResult;
+
+            console.log(`User Query: ${result.transcript}`);
+            for (const message of result.responseMessages) {
+              if (message.text) {
+                console.log(`Agent Response: ${message.text.text}`);
+              }
+            }
+            if (result.match.intent) {
+              console.log(`Matched Intent: ${result.match.intent.displayName}`);
+            }
+            console.log(`Current Page: ${result.currentPage.displayName}`);
+
+            // console.log(data.detectIntentResponse);
+
+            if (data.detectIntentResponse.responseType === 'FINAL') {
+              console.log('final stream');
+
+              listenStream();
+            }
+          }
         });
+
         console.log('on-start');
 
         // recognizeStream = createWriteStream('audio.wav')
       } catch (error) {
         console.error(error);
       }
-    });
+    };
+
+    socket.on('start-streaming-audio', listenStream);
 
     socket.on('on-stream-data', (data: Buffer) => {
       try {
