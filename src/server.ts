@@ -1,28 +1,26 @@
-import 'reflect-metadata';
 import App from '@/app';
 import { DialogFlowWebhookController } from '@/controllers/dialog-flow-webhook.controller';
-import { NODE_ENV, ORIGIN, PORT, SOCKETS_PORT } from '@config';
+import { NODE_ENV, ORIGIN, PORT } from '@config';
 import { IndexController } from '@controllers/index.controller';
 import { MessageController } from '@controllers/message.socket.controller';
 import { logger } from '@utils/logger';
 import validateEnv from '@utils/validateEnv';
-import { useSocketServer } from 'socket-controllers';
-import { Server } from 'socket.io';
-import DialogFlowCXSocketController from './controllers/dialog-flow.socket.controller';
-import Container from 'typedi';
-import { useContainer as useSocketContainer } from 'socket-controllers';
 import { createServer } from 'http';
+import 'reflect-metadata';
+import { useContainer as useSocketContainer, useSocketServer } from 'socket-controllers';
+import { Server } from 'socket.io';
+import Container from 'typedi';
+import { ATMsController } from './controllers/atms.controller';
+import DialogFlowCXSocketController from './controllers/dialog-flow.socket.controller';
 
-// try {
 validateEnv();
 
 useSocketContainer(Container);
 
-const app = new App([IndexController, DialogFlowWebhookController]);
-// app.listen();
+const app = new App([IndexController, DialogFlowWebhookController, ATMsController]);
+
 const server = createServer(app.app);
 
-// const io = new Server(/* parseInt(SOCKETS_PORT) */);
 const io = new Server(server, {
   cors: {
     origin: ORIGIN,

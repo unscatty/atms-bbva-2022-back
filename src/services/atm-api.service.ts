@@ -2,7 +2,9 @@ import { LatLngLiteral } from '@googlemaps/google-maps-services-js';
 import { ApiATM, toATM } from '@interfaces/atm-api.interface';
 import IATMService from '@services/interfaces/atm.service.interface';
 import fetch from 'node-fetch';
+import { Service } from 'typedi';
 
+@Service()
 export class ApiATMService implements IATMService {
   async getATMs(location: LatLngLiteral) {
     const now = new Date();
