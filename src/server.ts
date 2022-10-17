@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import App from '@/app';
 import { DialogFlowWebhookController } from '@/controllers/dialog-flow-webhook.controller';
-import { SOCKETS_PORT } from '@config';
+import { NODE_ENV, ORIGIN, PORT, SOCKETS_PORT } from '@config';
 import { IndexController } from '@controllers/index.controller';
 import { MessageController } from '@controllers/message.socket.controller';
 import { logger } from '@utils/logger';
@@ -11,6 +11,7 @@ import { Server } from 'socket.io';
 import DialogFlowCXSocketController from './controllers/dialog-flow.socket.controller';
 import Container from 'typedi';
 import { useContainer as useSocketContainer } from 'socket-controllers';
+import { createServer } from 'http';
 
 // try {
 validateEnv();
@@ -18,9 +19,22 @@ validateEnv();
 useSocketContainer(Container);
 
 const app = new App([IndexController, DialogFlowWebhookController]);
-app.listen();
+// app.listen();
+const server = createServer(app.app);
 
-const io = new Server(parseInt(SOCKETS_PORT));
+// const io = new Server(/* parseInt(SOCKETS_PORT) */);
+const io = new Server(server, {
+  cors: {
+    origin: ORIGIN,
+  },
+});
+
+server.listen(parseInt(PORT), () => {
+  logger.info(`=================================`);
+  logger.info(`======= ENV: ${NODE_ENV} =======`);
+  logger.info(`🚀 App listening on the port ${PORT}`);
+  logger.info(`=================================`);
+});
 
 try {
   useSocketServer(io, {
@@ -30,4 +44,4 @@ try {
   logger.error(error);
 }
 
-logger.info(`Socket.io server running or port: ${SOCKETS_PORT}`);
+logger.info(`Socket.io server running or port: ${PORT}`);
