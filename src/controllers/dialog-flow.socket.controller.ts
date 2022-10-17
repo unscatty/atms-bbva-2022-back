@@ -7,7 +7,7 @@ import { Service } from 'typedi';
 @Service()
 @SocketController('/chat')
 export default class DialogFlowCXSocketController {
-  // stream?: gax.CancellableStream;
+  recognizeStream?: pumpify;
 
   constructor(private dfcxService: DialogFlowCXService) {}
 
@@ -15,80 +15,29 @@ export default class DialogFlowCXSocketController {
   onConnect(@ConnectedSocket() socket: Socket) {
     socket.emit('connected');
 
-    // let recognizeStream: pumpify;
-    let recognizeStream: pumpify;
+    // let this.recognizeStream: pumpify;
+    // let
 
     socket.on('detect-intent', this.wrap(this.onDetectIntent).bind(this));
     socket.on('detect-intent-audio', this.wrap(this.onDetectIntentAudio).bind(this));
     socket.on('detect-intent-audio-synth', this.wrap(this.onDetectIntentAudioSynthesize).bind(this));
     socket.on('detect-intent-audio-echo', this.wrap(this.echoAudio).bind(this));
 
-    const listenStream = (request: DialogFlowCX.IStreamingDetectIntentRequest) => {
-      if (!recognizeStream?.destroyed) {
-        recognizeStream?.destroy();
-      }
-
-      try {
-        // this.dfcxService.detectIntentAudioStream(data).then(stream => {
-        // recognizeStream = stream
-        recognizeStream = this.dfcxService.improvedDetectAudioStream(request, data => {
-          // socket.emit('intent-matched', data);
-
-          if (data.recognitionResult) {
-            console.log(`Intermediate Transcript: ${data.recognitionResult.transcript}`);
-          } else {
-            socket.emit('intent-matched', data);
-            console.log('Detected Intent:');
-            const result = data.detectIntentResponse.queryResult;
-
-            console.log(`User Query: ${result.transcript}`);
-            for (const message of result.responseMessages) {
-              if (message.text) {
-                console.log(`Agent Response: ${message.text.text}`);
-              }
-            }
-            if (result.match.intent) {
-              console.log(`Matched Intent: ${result.match.intent.displayName}`);
-            }
-            console.log(`Current Page: ${result.currentPage.displayName}`);
-
-            // console.log(data.detectIntentResponse);
-
-            if (data.detectIntentResponse.responseType === 'FINAL') {
-              console.log('final stream');
-
-              if (!recognizeStream?.destroyed) {
-                recognizeStream?.destroy();
-              }
-            }
-          }
-        });
-
-        console.log('on-start');
-
-        // recognizeStream = createWriteStream('audio.wav')
-      } catch (error) {
-        console.error(error);
-      }
-    };
-
-    socket.on('start-streaming-audio', listenStream);
+    socket.on('start-streaming-audio', (request: DialogFlowCX.IStreamingDetectIntentRequest) => this.listenStream(socket, request));
 
     socket.on('on-stream-data', (request: DialogFlowCX.IStreamingDetectIntentRequest) => {
       try {
-        if (recognizeStream.destroyed) {
-          listenStream(request);
+        if (this.recognizeStream.destroyed) {
+          this.listenStream(socket, request);
         }
 
-        recognizeStream?.write(request);
+        this.recognizeStream?.write(request);
         // }
       } catch (error) {}
     });
 
     socket.on('on-stream-stop', () => {
-      recognizeStream.end();
-      console.log('on-stop');
-      // recognizeStream.close()
+      this.recognizeStream?.destroy();
     });
   }
 
@@ -103,6 +52,53 @@ export default class DialogFlowCXSocketController {
   // onStreamData(@MessageBody() data: Buffer) {
   //   this.stream?.write(data);
   // }
+
+  listenStream(connectedSocket: Socket, request: DialogFlowCX.IStreamingDetectIntentRequest) {
+    if (!this.recognizeStream?.destroyed) {
+      this.recognizeStream?.destroy();
+    }
+
+    try {
+      this.recognizeStream = this.dfcxService.improvedDetectAudioStream(request, data => {
+        // socket.emit('intent-matched', data);
+
+        if (data.recognitionResult) {
+          console.log(`Intermediate Transcript: ${data.recognitionResult.transcript}`);
+        } else {
+          connectedSocket.emit('intent-matched', data);
+          console.log('Detected Intent:');
+          const result = data.detectIntentResponse.queryResult;
+
+          console.log(`User Query: ${result.transcript}`);
+          for (const message of result.responseMessages) {
+            if (message.text) {
+              console.log(`Agent Response: ${message.text.text}`);
+            }
+          }
+          if (result.match.intent) {
+            console.log(`Matched Intent: ${result.match.intent.displayName}`);
+          }
+          console.log(`Current Page: ${result.currentPage.displayName}`);
+
+          // console.log(data.detectIntentResponse);
+
+          if (data.detectIntentResponse.responseType === 'FINAL') {
+            console.log('final stream');
+
+            if (!this.recognizeStream?.destroyed) {
+              this.recognizeStream?.destroy();
+            }
+          }
+        }
+      });
+
+      console.log('on-start');
+
+      // this.recognizeStream = createWriteStream('audio.wav')
+    } catch (error) {
+      console.error(error);
+    }
+  }
 
   private wrap<T>(func: (funcArgs: any) => T | Promise<T>) {
     return async (args: any, callback: (...args: any[]) => void) => {
