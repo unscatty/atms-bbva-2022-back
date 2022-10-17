@@ -9,8 +9,8 @@ export class DialogFlowWebhookController {
 
     let newText = '';
 
-    if (tag === 'test') {
-      newText = `Hey! you said ${text || transcript}`;
+    if (tag === 'echo') {
+      newText = `Hola! Lo que quieres es: ${text || transcript}`;
     }
 
     return {

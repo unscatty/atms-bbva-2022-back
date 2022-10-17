@@ -14,7 +14,7 @@ export class ImprovedSessionsClient {
     // Format the audio content as input request for pipeline
     const recognizeStream = streamEvents(new pumpify.obj());
 
-    const requestStream = (this as any)
+    const requestStream = (this as unknown as OldSessionsClient)
       .streamingDetectIntent(options)
       .on('error', (err: Error) => {
         recognizeStream.destroy(err);
@@ -22,8 +22,6 @@ export class ImprovedSessionsClient {
       .on('response', response => {
         recognizeStream.emit('response', response);
       });
-
-    // const copyConfig = streamingConfig;
 
     // Attach the events to the request stream, but only do so
     // when the first write (of data) comes in.
@@ -42,11 +40,9 @@ export class ImprovedSessionsClient {
         // the appropriate request structure.
         new PassThrough({
           objectMode: true,
-          transform: (audioContent, _, next) => {
-            if (audioContent !== undefined) {
-              // copyConfig.queryInput.audio.audio = audioContent;
-              // next(undefined, copyConfig);
-              next(undefined, { queryInput: { audio: { audio: audioContent } } });
+          transform: (request: DialogFlowCX.IStreamingDetectIntentRequest, _, next) => {
+            if (request !== undefined) {
+              next(undefined, request);
               return;
             }
             next();

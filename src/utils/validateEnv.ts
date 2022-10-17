@@ -10,7 +10,7 @@ const validateEnv = () => {
     DIALOGFLOWCX_AUDIO_ENCODING: str(),
     DIALOGFLOWCX_AUDIO_SAMPLE_RATE: num(),
     DIALOGFLOWCX_LANGUAGE_CODE: str({
-      choices: ['en', 'es'],
+      choices: ['en', 'es', 'en-US', 'es-MX'],
     }),
     DIALOGFLOWCX_PROJECT_ID: str(),
     DIALOGFLOWCX_AGENT_ID: str(),

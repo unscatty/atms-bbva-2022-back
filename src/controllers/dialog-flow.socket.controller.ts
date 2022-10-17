@@ -25,13 +25,15 @@ export default class DialogFlowCXSocketController {
     socket.on('detect-intent-audio-synth', this.wrap(this.onDetectIntentAudioSynthesize).bind(this));
     socket.on('detect-intent-audio-echo', this.wrap(this.echoAudio).bind(this));
 
-    const listenStream = () => {
-      recognizeStream?.destroy();
+    const listenStream = (request: DialogFlowCX.IStreamingDetectIntentRequest) => {
+      if (!recognizeStream?.destroyed) {
+        recognizeStream?.destroy();
+      }
 
       try {
         // this.dfcxService.detectIntentAudioStream(data).then(stream => {
-        // recognizeStream = stream;t
-        recognizeStream = this.dfcxService.improvedDetectAudioStream(data => {
+        // recognizeStream = stream
+        recognizeStream = this.dfcxService.improvedDetectAudioStream(request, data => {
           // socket.emit('intent-matched', data);
 
           if (data.recognitionResult) {
@@ -81,7 +83,9 @@ export default class DialogFlowCXSocketController {
             if (data.detectIntentResponse.responseType === 'FINAL') {
               console.log('final stream');
 
-              listenStream();
+              if (!recognizeStream?.destroyed) {
+                recognizeStream?.destroy();
+              }
             }
           }
         });
@@ -96,14 +100,18 @@ export default class DialogFlowCXSocketController {
 
     socket.on('start-streaming-audio', listenStream);
 
-    socket.on('on-stream-data', (data: Buffer) => {
+    socket.on('on-stream-data', (request: DialogFlowCX.IStreamingDetectIntentRequest) => {
       try {
-        // console.log('on-data');
-        if (data.length > 0) {
-          // console.log(data);
-          // console.log('writing to stream');
-          recognizeStream?.write(data);
+        if (recognizeStream.destroyed) {
+          listenStream(request);
         }
+
+        // console.log('on-data');
+        // if (data.length > 0) {
+        // console.log(data);
+        // console.log('writing to stream');
+        recognizeStream?.write(request);
+        // }
       } catch (error) {}
     });
 

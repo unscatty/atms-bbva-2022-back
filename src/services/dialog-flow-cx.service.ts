@@ -18,6 +18,7 @@ import { Transform, pipeline } from 'stream';
 import type * as gax from 'google-gax';
 import Pumpify from 'pumpify';
 import { response } from 'express';
+import { google } from '@google-cloud/dialogflow-cx/build/protos/protos';
 
 // const pump = promisify(pipeline);
 
@@ -38,9 +39,12 @@ export const defaultDialogFlowCXSessionPathOptions: DialogFlowCXSessionPathOptio
 export const DEFAULT_DIALOG_FLOW_CX_API_ENDPOINT = new Token<string>('DEFAULT_DIALOG_FLOW_CX_API_ENDPOINT');
 
 export const defaultSynthesizeSpeechConfig: DialogFlowCX.ISynthesizeSpeechConfig = {
-  speakingRate: 1.15,
-  pitch: 10.0,
+  speakingRate: 1.3,
+  // pitch: 8.5,
   volumeGainDb: 0.5,
+  voice: {
+    ssmlGender: google.cloud.dialogflow.cx.v3.SsmlVoiceGender.SSML_VOICE_GENDER_FEMALE,
+  },
 };
 
 // Add dependencies to IoC container
@@ -105,8 +109,12 @@ export default class DialogFlowCXService {
     }
   }
 
-  improvedDetectAudioStream(onData: (data: DialogFlowCX.IStreamingDetectIntentResponse) => void): Pumpify {
+  improvedDetectAudioStream(
+    request: DialogFlowCX.IStreamingDetectIntentRequest,
+    onData: (data: DialogFlowCX.IStreamingDetectIntentResponse) => void
+  ): Pumpify {
     const initialStreamRequest: DialogFlowCX.IStreamingDetectIntentRequest = {
+      ...request,
       session: this.sessionPath,
       queryInput: {
         audio: {
@@ -128,57 +136,6 @@ export default class DialogFlowCXService {
       .streamingIntentDetect(initialStreamRequest)
       .on('error', console.error)
       .on('data', onData);
-    // .on('data', (data: DialogFlowCX.IStreamingDetectIntentResponse) => {
-    //   if (data.recognitionResult) {
-    //     console.log(`Intermediate Transcript: ${data.recognitionResult.transcript}`);
-
-    //     console.log(data);
-    //     // const response = data.response;
-    //     // console.log(response);
-
-    //     // console.log('Detected Intent:');
-    //     // const result = data.detectIntentResponse.queryResult;
-
-    //     // console.log(`User Query: ${result.transcript}`);
-    //     // for (const message of result.responseMessages) {
-    //     //   if (message.text) {
-    //     //     console.log(`Agent Response: ${message.text.text}`);
-    //     //   }
-    //     // }
-    //     // if (result.match.intent) {
-    //     //   console.log(`Matched Intent: ${result.match.intent.displayName}`);
-    //     // }
-    //     // console.log(`Current Page: ${result.currentPage.displayName}`);
-
-    //     // if (data.recognitionResult.isFinal) {
-    //     //   console.log('final stream');
-
-    //     //   // return this.detectIntentAudioStream(stream);
-    //     // }
-    //   } else {
-    //     console.log('Detected Intent:');
-    //     const result = data.detectIntentResponse.queryResult;
-
-    //     console.log(`User Query: ${result.transcript}`);
-    //     for (const message of result.responseMessages) {
-    //       if (message.text) {
-    //         console.log(`Agent Response: ${message.text.text}`);
-    //       }
-    //     }
-    //     if (result.match.intent) {
-    //       console.log(`Matched Intent: ${result.match.intent.displayName}`);
-    //     }
-    //     console.log(`Current Page: ${result.currentPage.displayName}`);
-
-    //     console.log(data.detectIntentResponse)
-
-    //     // if (data.detectIntentResponse.queryResult.) {
-    //     //   console.log('final stream');
-
-    //     //   // return this.detectIntentAudioStream(stream);
-    //     // }
-    //   }
-    // });
 
     return detectStream as Pumpify;
   }
