@@ -1,11 +1,9 @@
 import DialogFlowCXService from '@services/dialog-flow-cx.service';
 import { Blob } from 'buffer';
-import { ConnectedSocket, MessageBody, OnConnect, OnMessage, SocketController } from 'socket-controllers';
+import pumpify from 'pumpify';
+import { ConnectedSocket, OnConnect, SocketController } from 'socket-controllers';
 import { Socket } from 'socket.io';
 import { Service } from 'typedi';
-import type * as gax from 'google-gax';
-import { createWriteStream, WriteStream } from 'fs';
-import pumpify from 'pumpify';
 @Service()
 @SocketController('/chat')
 export default class DialogFlowCXSocketController {
@@ -38,30 +36,6 @@ export default class DialogFlowCXSocketController {
 
           if (data.recognitionResult) {
             console.log(`Intermediate Transcript: ${data.recognitionResult.transcript}`);
-
-            // console.log(data);
-            // const response = data.response;
-            // console.log(response);
-
-            // console.log('Detected Intent:');
-            // const result = data.detectIntentResponse.queryResult;
-
-            // console.log(`User Query: ${result.transcript}`);
-            // for (const message of result.responseMessages) {
-            //   if (message.text) {
-            //     console.log(`Agent Response: ${message.text.text}`);
-            //   }
-            // }
-            // if (result.match.intent) {
-            //   console.log(`Matched Intent: ${result.match.intent.displayName}`);
-            // }
-            // console.log(`Current Page: ${result.currentPage.displayName}`);
-
-            // if (data.recognitionResult.isFinal) {
-            //   console.log('final stream');
-
-            //   // return this.detectIntentAudioStream(stream);
-            // }
           } else {
             socket.emit('intent-matched', data);
             console.log('Detected Intent:');
@@ -106,10 +80,6 @@ export default class DialogFlowCXSocketController {
           listenStream(request);
         }
 
-        // console.log('on-data');
-        // if (data.length > 0) {
-        // console.log(data);
-        // console.log('writing to stream');
         recognizeStream?.write(request);
         // }
       } catch (error) {}

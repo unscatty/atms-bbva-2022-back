@@ -66,6 +66,7 @@ export class ImprovedSessionsClient {
   }
 }
 
+// Monkeypatch the SessionsClient
 Object.defineProperty(
   OldSessionsClient.prototype,
   'streamingIntentDetect',

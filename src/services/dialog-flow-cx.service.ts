@@ -1,26 +1,20 @@
 import 'reflect-metadata';
-import { ImprovedSessionsClient, SessionsClient } from '../helpers/improved-sessions-client';
-import { Service } from 'typedi';
+import { Container, Inject, Service, Token } from 'typedi';
 import { v4 } from 'uuid';
-import { Container, Token, Inject } from 'typedi';
+import { ImprovedSessionsClient, SessionsClient } from '../helpers/improved-sessions-client';
 
 import {
   DIALOGFLOWCX_AGENT_ID,
+  DIALOGFLOWCX_API_ENDPOINT,
   DIALOGFLOWCX_AUDIO_SAMPLE_RATE,
   DIALOGFLOWCX_LANGUAGE_CODE,
   DIALOGFLOWCX_PROJECT_ID,
   DIALOGFLOWCX_REGION_ID,
-  DIALOGFLOWCX_API_ENDPOINT,
 } from '@config';
-import { ReadStream, WriteStream } from 'fs';
-import { promisify } from 'util';
-import { Transform, pipeline } from 'stream';
-import type * as gax from 'google-gax';
-import Pumpify from 'pumpify';
-import { response } from 'express';
 import { google } from '@google-cloud/dialogflow-cx/build/protos/protos';
-
-// const pump = promisify(pipeline);
+import { ReadStream } from 'fs';
+import Pumpify from 'pumpify';
+import { Transform } from 'stream';
 
 export type DialogFlowCXSessionPathOptions = {
   project: string;
@@ -39,7 +33,7 @@ export const defaultDialogFlowCXSessionPathOptions: DialogFlowCXSessionPathOptio
 export const DEFAULT_DIALOG_FLOW_CX_API_ENDPOINT = new Token<string>('DEFAULT_DIALOG_FLOW_CX_API_ENDPOINT');
 
 export const defaultSynthesizeSpeechConfig: DialogFlowCX.ISynthesizeSpeechConfig = {
-  speakingRate: 1.3,
+  speakingRate: 1.15,
   // pitch: 8.5,
   volumeGainDb: 0.5,
   voice: {
@@ -110,11 +104,11 @@ export default class DialogFlowCXService {
   }
 
   improvedDetectAudioStream(
-    request: DialogFlowCX.IStreamingDetectIntentRequest,
+    initialRequest: DialogFlowCX.IStreamingDetectIntentRequest,
     onData: (data: DialogFlowCX.IStreamingDetectIntentResponse) => void
   ): Pumpify {
     const initialStreamRequest: DialogFlowCX.IStreamingDetectIntentRequest = {
-      ...request,
+      ...initialRequest,
       session: this.sessionPath,
       queryInput: {
         audio: {
@@ -186,19 +180,6 @@ export default class DialogFlowCXService {
 
     detectStream.write(initialStreamRequest);
 
-    // Stream the audio to Dialogflow.
-    // await pump(
-    //   stream,
-    //   // Format the audio stream into the request format.
-    //   new Transform({
-    //     objectMode: true,
-    //     transform: (obj, _, next) => {
-    //       next(null, { queryInput: { audio: { audio: obj } } });
-    //     },
-    //   }),
-    //   detectStream
-    // );
-
     return new Pumpify(
       stream,
       // Format the audio stream into the request format.
@@ -236,7 +217,6 @@ export default class DialogFlowCXService {
       };
 
       const [response] = await this.sessionClient.detectIntent(request);
-      // return this.sessionClient.detectIntent(request);
 
       return response;
     } catch (error) {
