@@ -27,7 +27,11 @@ export default class DialogFlowCXSocketController {
 
   @OnMessage('start-streaming-audio')
   onStartStreamingAudio(@MessageBody() initialRequest: DialogFlowCX.IStreamingDetectIntentRequest, @ConnectedSocket() socket: Socket) {
-    this.listenStream(socket, initialRequest);
+    try {
+      this.listenStream(socket, initialRequest);
+    } catch (error) {
+      console.debug(error);
+    }
   }
 
   @OnMessage('stream-audio-data')
@@ -42,6 +46,8 @@ export default class DialogFlowCXSocketController {
     } catch (error) {
       console.error(error);
       this.destroyStream(socket.id);
+      // Restart the stream
+      this.listenStream(socket, request);
     }
   }
 
@@ -50,6 +56,41 @@ export default class DialogFlowCXSocketController {
     console.log('on-stop-audio');
     this.destroyStream(socketID);
     delete this.recognizeStreams[socketID];
+  }
+
+  @OnMessage('pause-streaming-audio')
+  onPauseStreamingAudio(@SocketId() socketID: string) {
+    console.log('on-pause-streaming-audio');
+
+    this.pauseStream(socketID);
+  }
+
+  @OnMessage('resume-streaming-audio')
+  onResumeStreamingAudio(@SocketId() socketID: string) {
+    console.log('on-resume-streaming-audio');
+
+    this.resumeStream(socketID);
+  }
+
+  @OnMessage('reset-conversation')
+  onResetConversation() {
+    this.dfcxService.resetSession();
+  }
+
+  private pauseStream(socketID: string) {
+    const stream = this.recognizeStreams[socketID];
+
+    if (!stream?.destroyed || !stream?.isPaused) {
+      this.recognizeStreams[socketID]?.pause();
+    }
+  }
+
+  private resumeStream(socketID: string) {
+    const stream = this.recognizeStreams[socketID];
+
+    if (!stream?.destroyed && stream?.isPaused) {
+      stream.resume();
+    }
   }
 
   private destroyStream(socketID: string) {
@@ -68,8 +109,8 @@ export default class DialogFlowCXSocketController {
           console.log(`Intermediate Transcript: ${data.recognitionResult.transcript}`);
         } else {
           // connectedSocket.emit('intent-matched', data);
-          console.log('Detected Intent:');
           const result = data.detectIntentResponse.queryResult;
+          console.log(`Detected Intent: ${data.detectIntentResponse.queryResult?.intent?.displayName}`);
 
           console.log(`User Query: ${result.transcript}`);
           for (const message of result.responseMessages) {
@@ -85,15 +126,22 @@ export default class DialogFlowCXSocketController {
           // console.log(data.detectIntentResponse);
 
           if (data.detectIntentResponse.responseType === 'FINAL') {
-            connectedSocket.emit('stream-intent-matched', data);
+            if (data.detectIntentResponse.queryResult.match.matchType !== 'NO_INPUT') {
+              connectedSocket.emit('stream-intent-matched', data);
+            }
+
             this.destroyStream(connectedSocket.id);
           }
         }
       });
 
-      console.log('on-start');
+      console.log('listening');
     } catch (error) {
       console.error(error);
+
+      // Restart the stream
+      this.destroyStream(connectedSocket.id);
+      this.listenStream(connectedSocket, request);
     }
   }
 

@@ -1,28 +1,155 @@
+import LocationPayload from '@interfaces/dialogflow-webhooks/streaming-payload.interface';
 import { Body, Controller, Post } from 'routing-controllers';
+import { Service } from 'typedi';
+import { IWebhookRequest } from '../dialogflowcx';
+import { ATM } from '../interfaces/atm.interface';
+import IATMService from '../services/interfaces/atm.service.interface';
 
+export type LocationWebhookRequest = IWebhookRequest & {
+  payload: LocationPayload;
+};
+
+@Service()
 @Controller()
 export class DialogFlowWebhookController {
-  @Post('/echo')
-  echo(@Body() data: DialogFlowCX.IWebhookRequest): DialogFlowCX.IWebhookResponse {
-    const { tag } = data.fulfillmentInfo;
-    const { text, transcript } = data;
+  constructor(private atmService: IATMService) {}
 
-    let newText = '';
-
-    if (tag === 'echo') {
-      newText = `Hola! Lo que quieres es: ${text || transcript}`;
+  @Post('/location-webhooks')
+  async locationWebhook(@Body() data: LocationWebhookRequest): Promise<DialogFlowCX.IWebhookResponse> {
+    if (!data.payload?.location) {
+      return {
+        fulfillmentResponse: {
+          messages: [
+            {
+              text: {
+                text: ['Necesitas proporcionar tu ubicación para usar esta función'],
+              },
+            },
+          ],
+        },
+      };
     }
+
+    const { tag } = data.fulfillmentInfo;
+
+    console.debug(data.payload);
+
+    switch (tag) {
+      case 'closest-atm':
+        return this.closestATM(data);
+      case 'route-to-atm':
+        return this.routeToATM(data);
+      default:
+        return {
+          fulfillmentResponse: {
+            messages: [
+              {
+                text: {
+                  text: ['Esa acción aún no está disponible'],
+                },
+              },
+            ],
+          },
+        };
+    }
+  }
+
+  private async routeToATM(data: LocationWebhookRequest): Promise<DialogFlowCX.IWebhookResponse> {
+    const lastAmtLocation = data.sessionInfo?.parameters?.last_amt_location;
+    console.debug(lastAmtLocation.structValue.fields);
 
     return {
       fulfillmentResponse: {
         messages: [
           {
             text: {
-              text: [newText],
+              text: ['Buscando la ruta'],
             },
           },
         ],
       },
     };
+  }
+
+  private async closestATM(data: LocationWebhookRequest): Promise<DialogFlowCX.IWebhookResponse> {
+    const closestATMs = await this.atmService.getClosestATMs(data.payload.location);
+    // console.debug(closestATMs);
+    // const closest = await this.atmService.getClosestATMs(data.payload.location)[0];
+
+    const closest = closestATMs[0];
+    console.debug(closest);
+    let sessionInfo = null;
+
+    // let textReponse =
+    let messages = [
+      {
+        text: {
+          text: ['No se encontró un cajero BBVA cercano a tu ubicación'],
+        },
+      },
+    ];
+
+    if (closest) {
+      messages = this.buildATMTextResponse(closest);
+
+      sessionInfo = {
+        parameters: {
+          last_amt_location: {
+            structValue: {
+              fields: {
+                lat: {
+                  numberValue: closest.latitud,
+                },
+                lng: {
+                  numberValue: closest.longitud,
+                },
+              },
+            },
+          },
+        },
+      };
+    }
+
+    return {
+      sessionInfo,
+      fulfillmentResponse: {
+        messages,
+      },
+    };
+  }
+
+  private buildATMTextResponse(atm: ATM) {
+    let textReponse = 'El cajero BBVA más cercano a tu ubicación se encuenta en';
+
+    if (atm.calle) {
+      textReponse += ` la calle ${atm.calle}`;
+    }
+
+    if (atm.numExt) {
+      textReponse += `, número ${atm.numExt}`;
+    }
+
+    if (atm.colonia) {
+      textReponse += ` en la colonia ${atm.colonia}`;
+    }
+
+    if (atm.delMuni) {
+      textReponse += ` en la delegación ${atm.delMuni}`;
+    }
+
+    return [
+      {
+        text: {
+          text: [textReponse],
+        },
+      },
+      {
+        text: {
+          text: ['¿Te gustaría ver la ruta hacia ese cajero?'],
+        },
+      },
+    ];
+
+    // return [textReponse, ];
   }
 }
