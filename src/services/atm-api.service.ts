@@ -7,7 +7,7 @@ import { Service } from 'typedi';
 
 @Service()
 export default class ApiATMService implements IATMService {
-  async getATMs(location: LatLngLiteral) {
+  async getClosestATMs(location: LatLngLiteral) {
     const now = new Date();
 
     const bodyParams: Record<string, any> = {
@@ -45,6 +45,10 @@ export default class ApiATMService implements IATMService {
     const data = ((await apiResponse.json()) as any).Obj as ApiATM[];
 
     return data.map(apiATM => toATM(apiATM));
+  }
+
+  async getClosestATM(location: LatLngLiteral) {
+    return (await this.getClosestATMs(location))[0];
   }
 }
 

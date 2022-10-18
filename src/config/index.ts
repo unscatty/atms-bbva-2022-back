@@ -13,3 +13,5 @@ export const {
   DIALOGFLOWCX_REGION_ID,
   DIALOGFLOWCX_API_ENDPOINT,
 } = process.env;
+
+export * from './container';

@@ -13,11 +13,14 @@ import Container from 'typedi';
 import ATMsController from '@controllers/atms.controller';
 import DialogFlowCXSocketController from '@controllers/dialog-flow.socket.controller';
 import { useContainer as useRoutingContainer } from 'routing-controllers';
+import { setDependencies } from '@config';
 
 validateEnv();
 
-useSocketContainer(Container);
 useRoutingContainer(Container);
+useSocketContainer(Container);
+
+setDependencies();
 
 const app = new App([IndexController, DialogFlowWebhookController, ATMsController]);
 
