@@ -1,15 +1,15 @@
 import { LatLngLiteral } from '@googlemaps/google-maps-services-js';
+import ApiATMService from '@services/atm-api.service';
 import { Body, Controller, Post } from 'routing-controllers';
 import { Service } from 'typedi';
-import IATMService from '@services/interfaces/atm.service.interface';
-import { ApiATMService } from '../services/atm-api.service';
+// import { ApiATMService } from '../services/atm-api.service';
 
 @Service()
 @Controller('/atms')
-export class ATMsController {
-  private atmService: IATMService;
-  constructor() {
-    this.atmService = new ApiATMService();
+export default class ATMsController {
+  // private atmService: IATMService;
+  constructor(private atmService: ApiATMService) {
+    // this.atmService = new ApiATMService();
   }
 
   @Post()

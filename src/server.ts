@@ -10,12 +10,14 @@ import 'reflect-metadata';
 import { useContainer as useSocketContainer, useSocketServer } from 'socket-controllers';
 import { Server } from 'socket.io';
 import Container from 'typedi';
-import { ATMsController } from './controllers/atms.controller';
-import DialogFlowCXSocketController from './controllers/dialog-flow.socket.controller';
+import ATMsController from '@controllers/atms.controller';
+import DialogFlowCXSocketController from '@controllers/dialog-flow.socket.controller';
+import { useContainer as useRoutingContainer } from 'routing-controllers';
 
 validateEnv();
 
 useSocketContainer(Container);
+useRoutingContainer(Container);
 
 const app = new App([IndexController, DialogFlowWebhookController, ATMsController]);
 

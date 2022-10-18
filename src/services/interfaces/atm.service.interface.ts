@@ -1,6 +1,5 @@
 import type { ATM } from '@interfaces/atm.interface';
 
-export default interface IATMService {
-  // eslint-disable-next-line no-unused-vars
-  getATMs: (...args: any[]) => ATM[] | Promise<ATM[]>;
+export default abstract class IATMService {
+  abstract getATMs: (...args: any[]) => ATM[] | Promise<ATM[]>;
 }

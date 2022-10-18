@@ -2,10 +2,11 @@ import { LatLngLiteral } from '@googlemaps/google-maps-services-js';
 import { ApiATM, toATM } from '@interfaces/atm-api.interface';
 import IATMService from '@services/interfaces/atm.service.interface';
 import fetch from 'node-fetch';
+import 'reflect-metadata';
 import { Service } from 'typedi';
 
 @Service()
-export class ApiATMService implements IATMService {
+export default class ApiATMService implements IATMService {
   async getATMs(location: LatLngLiteral) {
     const now = new Date();
 
@@ -36,6 +37,8 @@ export class ApiATMService implements IATMService {
 
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+        Origin: 'https://www.strategis.mx',
+        Host: 'www.strategis.mx',
       },
     });
 
@@ -45,4 +48,4 @@ export class ApiATMService implements IATMService {
   }
 }
 
-export default new ApiATMService();
+// export default new ApiATMService();
