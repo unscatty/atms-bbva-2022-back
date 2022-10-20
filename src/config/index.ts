@@ -14,4 +14,9 @@ export const {
   DIALOGFLOWCX_API_ENDPOINT,
 } = process.env;
 
+// Google Maps
+
+export const { GOOGLE_MAPS_API_KEY } = process.env;
+
 export * from './container';
+export * from './map-style';

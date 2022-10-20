@@ -1,9 +1,11 @@
+import { LatLngLiteral } from '@googlemaps/google-maps-services-js';
 import LocationPayload from '@interfaces/dialogflow-webhooks/streaming-payload.interface';
 import { Body, Controller, Post } from 'routing-controllers';
 import { Service } from 'typedi';
 import { IWebhookRequest } from '../dialogflowcx';
 import { ATM } from '../interfaces/atm.interface';
-import IATMService from '../services/interfaces/atm.service.interface';
+import IATMService from '@services/interfaces/atm.service.interface';
+import MapsService from '@services/maps.service';
 
 export type LocationWebhookRequest = IWebhookRequest & {
   payload: LocationPayload;
@@ -12,7 +14,7 @@ export type LocationWebhookRequest = IWebhookRequest & {
 @Service()
 @Controller()
 export class DialogFlowWebhookController {
-  constructor(private atmService: IATMService) {}
+  constructor(private atmService: IATMService, private mapService: MapsService) {}
 
   @Post('/location-webhooks')
   async locationWebhook(@Body() data: LocationWebhookRequest): Promise<DialogFlowCX.IWebhookResponse> {
@@ -55,15 +57,33 @@ export class DialogFlowWebhookController {
   }
 
   private async routeToATM(data: LocationWebhookRequest): Promise<DialogFlowCX.IWebhookResponse> {
-    const lastAmtLocation = data.sessionInfo?.parameters?.last_amt_location;
-    console.debug(lastAmtLocation.structValue.fields);
+    const sessionLastAmtLocation = data.sessionInfo?.parameters?.last_amt_location;
+
+    console.debug(sessionLastAmtLocation.structValue.fields);
+
+    const lastAmtLocation: LatLngLiteral = {
+      lat: sessionLastAmtLocation.structValue?.fields?.lat?.numberValue,
+      lng: sessionLastAmtLocation.structValue?.fields?.lng?.numberValue,
+    };
+
+    const directionsImage = await this.mapService.getDirectionsImage(data.payload.location, lastAmtLocation);
+    console.debug(directionsImage);
 
     return {
       fulfillmentResponse: {
         messages: [
           {
             text: {
-              text: ['Buscando la ruta'],
+              text: ['Aquí está la ruta'],
+            },
+          },
+          {
+            payload: {
+              fields: {
+                mapImageSrc: {
+                  stringValue: directionsImage,
+                },
+              },
             },
           },
         ],
@@ -80,7 +100,6 @@ export class DialogFlowWebhookController {
     console.debug(closest);
     let sessionInfo = null;
 
-    // let textReponse =
     let messages = [
       {
         text: {

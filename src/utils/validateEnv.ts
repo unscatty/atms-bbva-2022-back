@@ -15,6 +15,9 @@ const validateEnv = () => {
     DIALOGFLOWCX_REGION_ID: str(),
 
     DIALOGFLOWCX_API_ENDPOINT: str(),
+
+    // Google Maps
+    GOOGLE_MAPS_API_KEY: str(),
   });
 };
 
