@@ -20,6 +20,7 @@ export default class DialogFlowCXSocketController {
 
     // Request-response like events
     socket.on('detect-intent', this.wrap(this.onDetectIntent).bind(this));
+    socket.on('detect-intent-text', this.wrap(this.onDetectIntentText).bind(this));
     socket.on('detect-intent-audio', this.wrap(this.onDetectIntentAudio).bind(this));
     socket.on('detect-intent-audio-synth', this.wrap(this.onDetectIntentAudioSynthesize).bind(this));
     socket.on('detect-intent-audio-echo', this.wrap(this.echoAudio).bind(this));
@@ -153,8 +154,12 @@ export default class DialogFlowCXSocketController {
     };
   }
 
-  async onDetectIntent(message: string) {
-    return this.dfcxService.detectIntent(message);
+  async onDetectIntent(request: DialogFlowCX.IDetectIntentRequest) {
+    return this.dfcxService.detectIntent(request);
+  }
+
+  async onDetectIntentText(message: string) {
+    return this.dfcxService.detectIntentText(message);
   }
 
   async onDetectIntentAudio(audio: Buffer) {

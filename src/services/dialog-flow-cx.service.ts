@@ -224,7 +224,7 @@ export default class DialogFlowCXService {
     }
   }
 
-  async detectIntent(text: string) {
+  async detectIntentText(text: string) {
     const request: DialogFlowCX.IDetectIntentRequest = {
       session: this.sessionPath,
       queryInput: {
@@ -236,6 +236,19 @@ export default class DialogFlowCXService {
     };
 
     const [response] = await this.sessionClient.detectIntent(request);
+
+    return response;
+  }
+
+  async detectIntent(request: DialogFlowCX.IDetectIntentRequest) {
+    const intentRequest: DialogFlowCX.IDetectIntentRequest = {
+      ...request,
+      session: this.sessionPath,
+    };
+
+    intentRequest.queryInput.languageCode = DIALOGFLOWCX_LANGUAGE_CODE;
+
+    const [response] = await this.sessionClient.detectIntent(intentRequest);
 
     return response;
   }
