@@ -1,11 +1,12 @@
 import { LatLngLiteral } from '@googlemaps/google-maps-services-js';
-import LocationPayload from '@interfaces/dialogflow-webhooks/streaming-payload.interface';
-import { Body, Controller, Post } from 'routing-controllers';
-import { Service } from 'typedi';
-import { IWebhookRequest } from '../dialogflowcx';
-import { ATM } from '../interfaces/atm.interface';
+import { LocationPayload } from '@interfaces/dialogflow-webhooks/streaming-payload.interface';
 import IATMService from '@services/interfaces/atm.service.interface';
 import MapsService from '@services/maps.service';
+import { Body, Controller, Post } from 'routing-controllers';
+import { Service } from 'typedi';
+import { type PayloadedWebhookResponse } from 'types/webhooks';
+import { IWebhookRequest } from '../dialogflowcx';
+import { ATM } from '../interfaces/atm.interface';
 
 export type LocationWebhookRequest = IWebhookRequest & {
   payload: LocationPayload;
@@ -56,7 +57,7 @@ export class DialogFlowWebhookController {
     }
   }
 
-  private async routeToATM(data: LocationWebhookRequest): Promise<DialogFlowCX.IWebhookResponse> {
+  private async routeToATM(data: LocationWebhookRequest): Promise<PayloadedWebhookResponse> {
     const sessionLastAmtLocation = data.sessionInfo?.parameters?.last_amt_location;
 
     console.debug(sessionLastAmtLocation.structValue.fields);
@@ -79,11 +80,7 @@ export class DialogFlowWebhookController {
           },
           {
             payload: {
-              fields: {
-                mapImageSrc: {
-                  stringValue: directionsImage,
-                },
-              },
+              mapImageSrc: directionsImage,
             },
           },
         ],

@@ -1,6 +1,10 @@
 import { LatLngLiteral } from '@googlemaps/google-maps-services-js';
 
-export default interface LocationPayload {
+export interface LocationPayload {
   location: LatLngLiteral;
   locationAllowed: boolean;
+}
+
+export interface ResponseMessagePayload {
+  mapImageSrc?: string;
 }
