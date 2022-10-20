@@ -106,7 +106,9 @@ export default class DialogFlowCXSocketController {
     try {
       this.recognizeStreams[connectedSocket.id] = this.dfcxService.improvedDetectAudioStream(request, data => {
         if (data.recognitionResult) {
-          connectedSocket.emit('stream-recognition-result', data);
+          if (data.recognitionResult?.transcript !== '') {
+            connectedSocket.emit('stream-recognition-result', data);
+          }
           console.log(`Intermediate Transcript: ${data.recognitionResult.transcript}`);
         } else {
           // connectedSocket.emit('intent-matched', data);
