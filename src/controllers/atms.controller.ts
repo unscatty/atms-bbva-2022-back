@@ -13,7 +13,7 @@ export default class ATMsController {
   }
 
   @Post()
-  nearby(@Body() body: { location: LatLngLiteral }) {
-    return this.atmService.getClosestATMs(body.location);
+  nearby(@Body() body: { location: LatLngLiteral; limit: number }) {
+    return this.atmService.getClosestATMs(body.location, body.limit);
   }
 }

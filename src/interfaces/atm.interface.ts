@@ -20,6 +20,9 @@ export interface ATM {
   colonia?: string;
   latitud?: number;
   longitud?: number;
+
+  // Distance (in straight line) calculated from BigQuery
+  straight_distance?: number;
 }
 
 export const generateDescriptions = (atm: ATM): { name: string; value?: string }[] => {

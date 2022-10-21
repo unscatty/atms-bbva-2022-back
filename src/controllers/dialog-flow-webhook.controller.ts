@@ -89,11 +89,12 @@ export class DialogFlowWebhookController {
   }
 
   private async closestATM(data: LocationWebhookRequest): Promise<DialogFlowCX.IWebhookResponse> {
-    const closestATMs = await this.atmService.getClosestATMs(data.payload.location);
+    // const closestATMs = await this.atmService.getClosestATMs(data.payload.location);
     // console.debug(closestATMs);
     // const closest = await this.atmService.getClosestATMs(data.payload.location)[0];
 
-    const closest = closestATMs[0];
+    const closest = await this.atmService.getClosestATM(data.payload.location);
+
     console.debug(closest);
     let sessionInfo = null;
 
