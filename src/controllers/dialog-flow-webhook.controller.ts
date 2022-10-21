@@ -7,6 +7,7 @@ import { Service } from 'typedi';
 import { type PayloadedWebhookResponse } from 'types/webhooks';
 import { IWebhookRequest } from '../dialogflowcx';
 import { ATM } from '../interfaces/atm.interface';
+import { capitalize } from '@utils/strings';
 
 export type LocationWebhookRequest = IWebhookRequest & {
   payload: LocationPayload;
@@ -139,19 +140,19 @@ export class DialogFlowWebhookController {
     let textReponse = 'El cajero BBVA más cercano a tu ubicación se encuenta en';
 
     if (atm.calle) {
-      textReponse += ` la calle ${atm.calle}`;
+      textReponse += ` la calle ${capitalize(atm.calle)}`;
     }
 
     if (atm.numExt) {
-      textReponse += `, número ${atm.numExt}`;
+      textReponse += `, número ${capitalize(atm.numExt)}`;
     }
 
     if (atm.colonia) {
-      textReponse += ` en la colonia ${atm.colonia}`;
+      textReponse += ` en la colonia ${capitalize(atm.colonia)}`;
     }
 
     if (atm.delMuni) {
-      textReponse += ` en la delegación ${atm.delMuni}`;
+      textReponse += ` en la delegación ${capitalize(atm.delMuni)}`;
     }
 
     return [
