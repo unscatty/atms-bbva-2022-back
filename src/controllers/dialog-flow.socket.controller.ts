@@ -24,6 +24,9 @@ export default class DialogFlowCXSocketController {
     socket.on('detect-intent-audio', this.wrap(this.onDetectIntentAudio).bind(this));
     socket.on('detect-intent-audio-synth', this.wrap(this.onDetectIntentAudioSynthesize).bind(this));
     socket.on('detect-intent-audio-echo', this.wrap(this.echoAudio).bind(this));
+
+    // Restart the conversation
+    socket.on('reset-conversation', this.wrap(this.onResetConversation).bind(this));
   }
 
   @OnMessage('start-streaming-audio')
@@ -73,9 +76,9 @@ export default class DialogFlowCXSocketController {
     this.resumeStream(socketID);
   }
 
-  @OnMessage('reset-conversation')
-  onResetConversation() {
-    this.dfcxService.resetSession();
+  onResetConversation(_: string) {
+    console.debug('resetting conversation');
+    return this.dfcxService.resetSession();
   }
 
   private pauseStream(socketID: string) {
@@ -152,7 +155,9 @@ export default class DialogFlowCXSocketController {
     return async (args: any, callback: (...args: any[]) => void) => {
       const response = await func.bind(this)(args);
 
-      callback(response);
+      if (callback) {
+        callback(response);
+      }
     };
   }
 

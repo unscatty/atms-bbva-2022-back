@@ -15,6 +15,7 @@ import { google } from '@google-cloud/dialogflow-cx/build/protos/protos';
 import { ReadStream } from 'fs';
 import Pumpify from 'pumpify';
 import { Transform } from 'stream';
+import { IDetectIntentRequest } from '../dialogflowcx';
 
 export type DialogFlowCXSessionPathOptions = {
   project: string;
@@ -50,15 +51,6 @@ export default class DialogFlowCXService {
   sessionClient: SessionsClient;
   sessionPathOptions: DialogFlowCXSessionPathOptions;
   sessionPath: ReturnType<InstanceType<typeof SessionsClient>['projectLocationAgentSessionPath']>;
-
-  resetSession() {
-    this.sessionPath = this.sessionClient.projectLocationAgentSessionPath(
-      this.sessionPathOptions.project,
-      this.sessionPathOptions.location,
-      this.sessionPathOptions.agent,
-      v4()
-    );
-  }
 
   constructor(
     @Inject(DEFAULT_DIALOG_FLOW_CX_SESSION_PATH_OPTIONS)
@@ -249,6 +241,22 @@ export default class DialogFlowCXService {
     intentRequest.queryInput.languageCode = DIALOGFLOWCX_LANGUAGE_CODE;
 
     const [response] = await this.sessionClient.detectIntent(intentRequest);
+
+    return response;
+  }
+
+  async resetSession(eventName = 'reset-session') {
+    const resetConversationRequest: IDetectIntentRequest = {
+      session: this.sessionPath,
+      queryInput: {
+        event: {
+          event: eventName,
+        },
+        languageCode: DIALOGFLOWCX_LANGUAGE_CODE,
+      },
+    };
+
+    const [response] = await this.sessionClient.detectIntent(resetConversationRequest);
 
     return response;
   }
