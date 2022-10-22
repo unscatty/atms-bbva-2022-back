@@ -27,12 +27,12 @@ export default class MapsService {
     return response.data;
   }
 
-  async getDirectionsImage(from: LatLngLiteral, to: LatLngLiteral) {
+  async getDirectionsImage(from: LatLngLiteral, to: LatLngLiteral, size = { width: 1200, height: 1200 }) {
     const data = await this.getDirections(from, to);
 
     const result = await asyncStaticMapUrl({
       key: this.API_KEY,
-      size: '600x600',
+      size: `${size.width}x${size.height}`,
       // style: styleEncoded,
       markers: [
         {
