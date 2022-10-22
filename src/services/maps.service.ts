@@ -1,4 +1,4 @@
-import { Client as MapsClient, Language, LatLngLiteral, UnitSystem } from '@googlemaps/google-maps-services-js';
+import { Client as MapsClient, DirectionsResponseData, Language, LatLngLiteral, TravelMode, UnitSystem } from '@googlemaps/google-maps-services-js';
 import { asyncStaticMapUrl } from 'static-google-map';
 import { Inject, Service } from 'typedi';
 import { GOOGLE_MAPS_API_KEY_TOKEN } from '@config';
@@ -13,7 +13,7 @@ export default class MapsService {
     this.mapsClient = new MapsClient();
   }
 
-  async getDirections(from: LatLngLiteral, to: LatLngLiteral) {
+  async getDirections(from: LatLngLiteral, to: LatLngLiteral, travelMode: TravelMode) {
     const response = await this.mapsClient.directions({
       params: {
         key: this.API_KEY,
@@ -21,14 +21,27 @@ export default class MapsService {
         destination: to,
         language: Language.es,
         units: UnitSystem.metric,
+        mode: travelMode,
       },
     });
 
     return response.data;
   }
 
-  async getDirectionsImage(from: LatLngLiteral, to: LatLngLiteral, size = { width: 1200, height: 1200 }) {
-    const data = await this.getDirections(from, to);
+  async getDirectionsImage(
+    from: LatLngLiteral,
+    to: LatLngLiteral,
+    directions?: DirectionsResponseData,
+    travelMode?: TravelMode,
+    size = { width: 1200, height: 1200 }
+  ) {
+    if (!travelMode) {
+      travelMode = TravelMode.driving;
+    }
+
+    if (!directions) {
+      directions = await this.getDirections(from, to, travelMode);
+    }
 
     const result = await asyncStaticMapUrl({
       key: this.API_KEY,
@@ -42,7 +55,7 @@ export default class MapsService {
           location: to,
         },
       ],
-      paths: data.routes.map(route => route.overview_polyline),
+      paths: directions.routes.map(route => route.overview_polyline),
     });
 
     // console.debug(styleEncoded);

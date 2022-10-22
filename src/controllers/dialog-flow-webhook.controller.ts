@@ -1,4 +1,4 @@
-import { LatLngLiteral } from '@googlemaps/google-maps-services-js';
+import { LatLngLiteral, TravelMode } from '@googlemaps/google-maps-services-js';
 import { LocationPayload } from '@interfaces/dialogflow-webhooks/streaming-payload.interface';
 import IATMService from '@services/interfaces/atm.service.interface';
 import MapsService from '@services/maps.service';
@@ -43,6 +43,14 @@ export class DialogFlowWebhookController {
         return this.closestATM(data);
       case 'route-to-atm':
         return this.routeToATM(data);
+      case 'travel-by-bike':
+        return this.routeToATM(data, TravelMode.bicycling);
+      case 'travel-by-driving':
+        return this.routeToATM(data, TravelMode.driving);
+      case 'travel-by-transit':
+        return this.routeToATM(data, TravelMode.transit);
+      case 'travel-by-walking':
+        return this.routeToATM(data, TravelMode.walking);
       default:
         return {
           fulfillmentResponse: {
@@ -58,20 +66,47 @@ export class DialogFlowWebhookController {
     }
   }
 
-  private async routeToATM(data: LocationWebhookRequest): Promise<PayloadedWebhookResponse> {
+  private async routeToATM(data: LocationWebhookRequest, injectedTravelMode?: TravelMode): Promise<PayloadedWebhookResponse> {
     const sessionLastAmtLocation = data.sessionInfo?.parameters?.last_amt_location;
+    const travelModeSessionValue = data.sessionInfo?.parameters?.last_travel_mode;
 
-    console.debug(sessionLastAmtLocation.structValue.fields);
+    let travelMode: TravelMode;
+
+    if (!travelModeSessionValue) {
+      travelMode = TravelMode.driving;
+    } else {
+      travelMode = TravelMode[travelModeSessionValue.stringValue];
+    }
+
+    if (injectedTravelMode) {
+      // Override travel mode if recognized from intent
+      travelMode = injectedTravelMode;
+    }
+
+    console.debug(data.sessionInfo.parameters);
+
+    // console.debug(sessionLastAmtLocation.structValue.fields);
 
     const lastAmtLocation: LatLngLiteral = {
       lat: sessionLastAmtLocation.structValue?.fields?.lat?.numberValue,
       lng: sessionLastAmtLocation.structValue?.fields?.lng?.numberValue,
     };
 
-    const directionsImage = await this.mapService.getDirectionsImage(data.payload.location, lastAmtLocation);
+    const directions = await this.mapService.getDirections(data.payload.location, lastAmtLocation, travelMode);
+
+    const directionsImage = await this.mapService.getDirectionsImage(data.payload.location, lastAmtLocation, directions);
     console.debug(directionsImage);
 
     return {
+      sessionInfo: {
+        ...data.sessionInfo,
+        parameters: {
+          ...data.sessionInfo?.parameters,
+          last_travel_mode: {
+            stringValue: travelMode,
+          },
+        },
+      },
       fulfillmentResponse: {
         messages: [
           {
@@ -84,9 +119,29 @@ export class DialogFlowWebhookController {
               mapImageSrc: directionsImage,
             },
           },
+          {
+            text: {
+              text: [`La distancia aproximada es de ${directions.routes[0].legs[0].distance.text} ${this.getRouteTransportName(travelMode)}`],
+            },
+          },
         ],
       },
     };
+  }
+
+  private getRouteTransportName(travelMode: TravelMode) {
+    switch (travelMode) {
+      case TravelMode.bicycling:
+        return 'en bicicleta';
+      case TravelMode.driving:
+        return 'conduciendo';
+      case TravelMode.transit:
+        return 'en transporte';
+      case TravelMode.walking:
+        return 'caminando';
+      default:
+        return '';
+    }
   }
 
   private async closestATM(data: LocationWebhookRequest): Promise<DialogFlowCX.IWebhookResponse> {
